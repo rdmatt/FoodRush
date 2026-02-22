@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodRush - Restaurante</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%); }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 16px; border-radius: 8px; color: white; z-index: 9999; }
+        .toast.success { background: #10B981; }
+        .toast.error { background: #EF4444; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen max-w-md mx-auto">
+    
+    <!-- CONFIGURAÇÃO DA API -->
+    <script>
+        // TROQUE PELO SEU DOMÍNIO DO RAILWAY
+        const API_URL = 'https://seu-backend.up.railway.app/api';
+    </script>
+
+    <!-- TELA DE LOGIN -->
+    <div id="login-screen" class="min-h-screen flex flex-col justify-center p-6">
+        <div class="text-center mb-8">
+            <div class="gradient-bg w-20 h-20 rounded-2xl mx-auto flex items-center justify-center mb-4">
+                <i class="fas fa-store text-white text-3xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold">FoodRush</h1>
+            <p class="text-gray-500">Restaurante Parceiro</p>
+        </div>
+
+        <form id="login-form" class="space-y-4">
+            <input type="email" id="login-email" placeholder="Email" required
+                class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500">
+            <input type="password" id="login-password" placeholder="Senha" required
+                class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500">
+            <button type="submit" class="w-full gradient-bg text-white font-bold py-3 rounded-xl">
+                Entrar
+            </button>
+        </form>
+        
+        <p class="text-center mt-4 text-sm text-gray-500">
+            <button onclick="showRegister()" class="text-orange-600 font-bold">Criar conta</button>
+        </p>
+    </div>
+
+    <!-- TELA DE CADASTRO -->
+    <div id="register-screen" class="hidden min-h-screen p-6">
+        <button onclick="showLogin()" class="mb-4 text-gray-500"><i class="fas fa-arrow-left mr-2"></i>Voltar</button>
+        <h2 class="text-2xl font-bold mb-4">Cadastrar Restaurante</h2>
+        
+        <form id="register-form" class="space-y-4">
+            <input type="text" id="reg-name" placeholder="Nome do restaurante" required class="w-full px-4 py-3 border rounded-xl">
+            <input type="email" id="reg-email" placeholder="Email" required class="w-full px-4 py-3 border rounded-xl">
+            <input type="tel" id="reg-phone" placeholder="Telefone" required class="w-full px-4 py-3 border rounded-xl">
+            <input type="text" id="reg-document" placeholder="CNPJ" required class="w-full px-4 py-3 border rounded-xl">
+            <input type="text" id="reg-address" placeholder="Endereço completo" required class="w-full px-4 py-3 border rounded-xl">
+            <input type="password" id="reg-password" placeholder="Senha (mínimo 6 caracteres)" required minlength="6" class="w-full px-4 py-3 border rounded-xl">
+            
+            <button type="submit" class="w-full gradient-bg text-white font-bold py-3 rounded-xl">
+                Cadastrar
+            </button>
+        </form>
+    </div>
+
+    <!-- APP PRINCIPAL -->
+    <div id="main-app" class="hidden">
+        <!-- Header -->
+        <div class="gradient-bg text-white p-6 rounded-b-3xl">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 class="text-xl font-bold" id="user-name">Restaurante</h2>
+                    <p class="text-sm text-orange-100" id="user-balance">Saldo: R$ 0,00</p>
+                </div>
+                <button onclick="logout()" class="text-white/80"><i class="fas fa-sign-out-alt text-xl"></i></button>
+            </div>
+            
+            <button onclick="showNewDelivery()" class="w-full bg-white text-orange-600 py-3 rounded-xl font-bold shadow-lg">
+                <i class="fas fa-plus-circle mr-2"></i>Solicitar Entregador
+            </button>
+        </div>
+
+        <!-- Lista de Entregas -->
+        <div class="p-4">
+            <h3 class="font-bold text-gray-800 mb-3">Suas Entregas</h3>
+            <div id="deliveries-list" class="space-y-3">
+                <p class="text-center text-gray-400 py-8">Nenhuma entrega ativa</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Nova Entrega -->
+    <div id="new-delivery-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+        <div class="bg-white w-full max-w-md rounded-t-3xl p-6">
+            <h3 class="text-xl font-bold mb-4">Nova Entrega</h3>
+            <form id="new-delivery-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Endereço de entrega</label>
+                    <textarea id="delivery-address" rows="2" placeholder="Rua, número, bairro" required class="w-full px-4 py-3 border rounded-xl resize-none"></textarea>
+                </div>
+                <input type="text" id="delivery-detail" placeholder="Complemento (opcional)" class="w-full px-4 py-3 border rounded-xl">
+                <input type="text" id="customer-name" placeholder="Nome do cliente" required class="w-full px-4 py-3 border rounded-xl">
+                <input type="tel" id="customer-phone" placeholder="Telefone do cliente" required class="w-full px-4 py-3 border rounded-xl">
+                <input type="text" id="description" placeholder="O que está sendo entregue?" class="w-full px-4 py-3 border rounded-xl">
+                
+                <div class="bg-orange-50 p-3 rounded-xl">
+                    <p class="text-sm text-orange-800">Valor estimado: <span class="font-bold">R$ 8,00 - R$ 15,00</span></p>
+                </div>
+
+                <button type="submit" class="w-full gradient-bg text-white font-bold py-3 rounded-xl">
+                    Buscar Entregador
+                </button>
+                <button type="button" onclick="closeNewDelivery()" class="w-full text-gray-500 py-2">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let currentToken = null;
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function showLogin() {
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('register-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.add('hidden');
+        }
+
+        function showRegister() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('register-screen').classList.remove('hidden');
+        }
+
+        function showMainApp() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('register-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            document.getElementById('user-name').textContent = currentUser.name;
+            loadDeliveries();
+        }
+
+        function showNewDelivery() {
+            document.getElementById('new-delivery-modal').classList.remove('hidden');
+        }
+
+        function closeNewDelivery() {
+            document.getElementById('new-delivery-modal').classList.add('hidden');
+        }
+
+        // Login
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('login-email').value,
+                        password: document.getElementById('login-password').value
+                    })
+                });
+                
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error);
+                
+                currentToken = data.token;
+                currentUser = data.user;
+                localStorage.setItem('token', currentToken);
+                showMainApp();
+                showToast('Bem-vindo!');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        });
+
+        // Cadastro
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const response = await fetch(`${API_URL}/register/restaurant`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: document.getElementById('reg-name').value,
+                        email: document.getElementById('reg-email').value,
+                        password: document.getElementById('reg-password').value,
+                        phone: document.getElementById('reg-phone').value,
+                        document: document.getElementById('reg-document').value,
+                        address: document.getElementById('reg-address').value
+                    })
+                });
+                
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error);
+                
+                showToast('Cadastro realizado! Faça login.');
+                showLogin();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        });
+
+        // Nova entrega
+        document.getElementById('new-delivery-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const response = await fetch(`${API_URL}/deliveries`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        delivery_address: document.getElementById('delivery-address').value,
+                        delivery_detail: document.getElementById('delivery-detail').value,
+                        customer_name: document.getElementById('customer-name').value,
+                        customer_phone: document.getElementById('customer-phone').value,
+                        description: document.getElementById('description').value
+                    })
+                });
+                
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error);
+                
+                closeNewDelivery();
+                showToast('Entrega solicitada! Procurando entregador...');
+                loadDeliveries();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        });
+
+        async function loadDeliveries() {
+            try {
+                const response = await fetch(`${API_URL}/deliveries/my`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                
+                const data = await response.json();
+                const list = document.getElementById('deliveries-list');
+                
+                if (data.deliveries.length === 0) {
+                    list.innerHTML = '<p class="text-center text-gray-400 py-8">Nenhuma entrega ativa</p>';
+                    return;
+                }
+
+                list.innerHTML = data.deliveries.map(d => `
+                    <div class="bg-white rounded-xl shadow p-4 border-l-4 ${d.status === 'searching' ? 'border-yellow-500' : d.status === 'accepted' ? 'border-blue-500' : 'border-green-500'}">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span class="text-xs font-bold text-gray-400">#${d.delivery_code}</span>
+                                <p class="font-bold">${d.customer_name}</p>
+                                <p class="text-xs text-gray-500">${d.delivery_address}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold">R$ ${d.total_price}</p>
+                                <span class="text-xs px-2 py-1 rounded-full ${d.status === 'searching' ? 'bg-yellow-100 text-yellow-800' : d.status === 'accepted' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">
+                                    ${d.status === 'searching' ? 'Buscando...' : d.status === 'accepted' ? 'A caminho' : d.status}
+                                </span>
+                            </div>
+                        </div>
+                        ${d.driver_name ? `
+                            <div class="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-motorcycle text-gray-400 mr-2"></i>
+                                    <span class="text-sm">${d.driver_name}</span>
+                                </div>
+                                <a href="tel:${d.driver_phone}" class="text-green-600"><i class="fas fa-phone"></i></a>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading deliveries:', error);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            currentUser = null;
+            currentToken = null;
+            showLogin();
+        }
+
+        // Auto-login
+        window.onload = () => {
+            const savedToken = localStorage.getItem('token');
+            if (savedToken) {
+                currentToken = savedToken;
+                // Idealmente validar token aqui
+                showMainApp();
+            }
+        };
+    </script>
+</body>
+</html>
